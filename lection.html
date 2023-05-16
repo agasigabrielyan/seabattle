@@ -1,0 +1,612 @@
+<p>
+    Будем уделять внимание написанию классов на java script
+</p>
+<p>
+    В html есть такая технология как drag and drop
+    , но мы не будем пользоваться drag and drop мы будем при перемещении изменять относительные позиции элементов.
+</p>
+<p>
+    Мы будем имитировать событие drag and drop с использованием своего собственного паттерна.
+</p>
+<p>
+    В index.html у нас есть разметка
+</p>
+<pre>
+У нас есть div для поля игрока и его оппонента, но они пустые, так как внутреннюю разметку мы будем сами динамически создавать
+</pre>
+<p>
+    В первую очередь у нас будет класс Mouse. Он будет отвечать за работу координат мыши, за ее левую кнопку
+</p>
+<p>
+    Так же у нас будет класс Battlefield.js поле
+</p>
+<p>
+    А так же у нас будет класс Ship.js
+</p>
+<p>
+    Так же создадим поле BattlefieldView.js, однако возникает вопрос, если у нас есть Battlefield зачем нам тогда BattlefieldView.js,
+    BattlefieldView.js будет наследоваться от Battlefield.js
+    В классе Battlefield будет храниться только логика, и чтобы разделить логику и визуальную часть мы создадим 2 разных класса
+    Т.е. BattlefieldView будет расширять возможности Battlefield и примешивать туда возможности визуала
+</p>
+<p>
+    С кораблем Ship у нас будет тоже самое, т.е. ShipView будет разделять размеры логического корабля, т.е. логичемские данные будут: размеры, ориентация,
+    а view у нас будет div, соответствующий этому кораблю.
+</p>
+<p>
+    Так же создадим файл additional.js - это у нас будет просто файл с функциями частого использования.
+</p>
+<p>
+    Так же мы создадим файл Application.js, класс, который будет отвечать за все приложение: расставить корабли, вызвать человека на бой - это состояние всего
+    приложения целиком
+</p>
+<p>
+    Так же у нас будет сцены, класс Scene.js у нас соответствуют какому-то состоянию приложений.
+    Т.е. Application описывает всю работу приложения, то Сцена описывает
+    работу приложения в каком-то режиме.
+</p>
+<p>
+    Создадим новую папку scenes, куда мы будем помещать все наши сцены, во-первых у нас будет сцена PreparationScene.js - это класс унаследованный от сцены,
+    и соответствует тому состоянию приложения, когда  у нас происходит подготовка, когда мы расставляем корабли.
+</p>
+<p>
+    Подключаем все наши файлы, additional мы подклчюаем самым первым, так как тут будут храниться функции, которые мы будем использовать везде.
+</p>
+<h2>НАЧНЕМ С МЫШИ</h2>
+<p>
+В нем у нас будет конструктор, куда мы будем принимать элемент и над этим элементом мы будем проводить все наши исследования. Отслеживать положение мыши, отслеживать
+    нажатие левой кнопки, отслеживать прокрутку колесика, поэтому выше конструктора напишем те свойства, которые хотим, чтобы у нашей мыши были.
+    первое:<br/>
+    under: false, который говорит находится ли наша мышь над нашим элементом.
+    pUnder: false, предыдущее состояние нашей мыши., т.е. находилась ли мышь над нашим элементом в предыдущий ТИК
+    x: null,
+    y: null - координаты мыши
+    pX: null,
+    pY: null
+</p>
+<p>
+    ТИК - это совокупность всех параллельно запущенных задач в оммент времени, которые должны быть произведены, в целом ТИКОМ у нас можно назвать процесс,
+    который приводит к тому, что у нас изображене на мониторе меняется.
+</p>
+<p>
+    Так же у нас  будут свойства left = false; и по аналогии pLeft = false;
+    delta = 0;
+    pDelta = 0;
+    Это свойству у нас будет соответствовать прокрутке колесика, если вниз, то дельта будет отрицательная, если наверх, то она будет положительная.
+    Так же запомним в свойство элемент
+
+</p>
+<p>
+    Начнем слушать события элемента
+</p>
+<p>
+    mousemove - это когда мышка двигается над элементом
+    mouseenter - когда мышка преодолевает и входит на элемент
+    mouseleave
+    нам так же интересны события mousedown и mouseup
+    wheel - это событие колесиком
+</p>
+<p>
+    Теперь создадим наш метод tick, мы будем перезаписывать текущее состояние в предыдущие
+</p>
+<p>
+    Во всех обработчиках мы вызовем метод tick и сразу будем проводить манипуляции, какие из них нам интересны:
+    В mousemove и mouseenter нам интересно обновить координаты, таким образом мы получаем координаты в любой момент времени.
+</p>
+<p>
+    Проверим это, для этого зайдем в script. вызовем requestAnimationFrame(tick), создадим метод tick
+    <pre>
+        requestAnimationFrame(tick);
+
+        function tick() {
+            requestAnimationFrame(tick);
+        }
+    </pre>
+</p>
+<p>
+    Что такое requestAnimationFrame - мы знаем, что у нас есть методы setTimeout и setInterval, которые позволяют зарегистрировать вызов функции
+    через некоторое время. requestAnimationFrame работает примерно таким же образом, он регистрирует вызов передаваемой в качестве аргумента, когда же будет
+    вызван метод tick, а именно в тот момент, когда монитор вздумает обновиться.
+</p>
+<p>
+    В среднем частота кадров у нас 60vps и мы хотим, чтобы примерно 60 раз в секунду наш метод tick вызывался
+</p>
+<p>
+    Для событий mousedown и mouseup пропишем:
+    <pre>
+        if(e.button === 0) {
+            this.left = true; // для события down это говорит о том, что левая клавиша нажата
+        }
+
+        if(e.button === 1) {
+            this.left = false; // для события mouseup левая клавиша отпущена
+        }
+
+        // для события прокрутки колесика мы будем вычислять delta
+        this.delta = e.deltaY > 0 ? 1 : -1;
+    </pre>
+</p>
+<p>
+    Мы видим, что во многих событиях у нас повторяется код, поэтому мы можем вынести его в отдельную функцию.
+</p>
+<p>
+    Зайдем в additional и напишем несколько функций, которыми мы хотим пользоваться везде
+    <pre>
+        // метод будер возвращать случайное число между максимальным и минимальным
+        function getRandomBetween(min, max) {
+            return min + Math.floor(Math.random()  * (max - min + 1));
+        }
+
+        // метод будет возвращать случайный элемент среди всех аргументов, которые я передаю в функцию
+        function getRandomFrom(...args) {
+            const index  = Math.floor(Math.random() * args.length);
+            return args(index);
+        }
+</pre>
+</p>
+<p>
+    Создадим класс Ship
+    <pre>
+        class Ship {
+            size = null;
+            direction = null;
+            killed = false;
+
+            constractor(size, direction) {
+                this.size = size;
+                this.direction = direction;
+            }
+        }
+    </pre>
+</p>
+<p>
+    Далее работаем с классом ShipView
+    <pre>
+        class ShipView extends Ship {
+            div = null;
+
+            constractor(size, direction) {
+                super(size, direction);
+
+                const div = document.createElement('div');
+                div.classList.add('ship');
+            }
+        }
+    </pre>
+</p>
+<p>
+    Т.е. первый класс у нас логическое расширение корабля, а во втором классе расширение возможностей логических
+</p>
+<p>
+    Теперь перейдем к классу Battlefield что нам в нем интересно это корабли на этом поле, попадания на этом поле
+    <pre>
+        ships = [];
+        shots = [];
+
+        constractor(ships, shots) {
+            this.ships = ships;
+            this.shots = shots;f
+        }
+    </pre>
+</p>
+<a href="https://youtu.be/os3nhBUWals?t=3351">https://youtu.be/os3nhBUWals?t=3351</a>
+<p>
+    Теперь давайте поработаем над методами, которые будут управлять состоянием кораблей и выстрелов
+    <pre>
+        addShip() {}
+        removeShip() {}
+        removeAllShips() {}
+        // по аналогии сделаем для выстрелов
+        addShot() {}
+        removeShot() {}
+        removeAllShips() {}
+    </pre>
+</p>
+<p>
+    Давайте начнем с метода removeAllShips() так как это самый простой метод
+    <pre>
+        const ships = this.ships.slice();
+
+        for(const ship of ships) {
+            this.removeShip(ship);
+        }
+
+        // в конце возвращаем количество удаляемых кораблей
+        return ships.length;
+    </pre>
+</p>
+<p>
+    По аналогии мы прописываем removeAllShots
+    <pre>
+        const shots = this.ships.slice();
+        for(const shot of shots) {
+            this.removeShot(shot);
+        }
+        return shots.length;
+    </pre>
+</p>
+<p>
+    Теперь создадим метод - добавить корабль
+    <pre>
+        addShip(ship) {
+            if(this.ships.includes(ship)) {
+                return false;
+            }
+
+            this.ships.push(ship);
+            return true;
+        }
+    </pre>
+</p>
+<p>
+    Мы добавили Battlefield, теперь добавим BattlefieldView
+</p>
+<p>
+    Вместо того, чтобы писать
+    <pre>
+
+        this.root = root;
+        this.dock = dock;
+        this.table = table;
+        this.polygon = polygon;
+    </pre>
+    мы можем написать
+    <pre>
+        Object.assign(this,{root, table, dock, polygon});
+    </pre>
+</p>
+<p>
+    Мы создали виртуальный дом, но его еще нет в нашем приложении, поэтому не будем его просто добавлять в нашем js, а поработаем с нашим Application
+</p>
+<p>
+    У нас есть место для игрока и его противника, поэтому добавим 2 свойства player и opponent
+    <pre>
+        class Application {
+            player = null;
+            opponent = null;
+
+            constructor(player, opponent) {
+                Object.assign(this,{player, opponent});
+            }
+        }
+    </pre>
+</p>
+<a href="https://youtu.be/os3nhBUWals?t=3904">https://youtu.be/os3nhBUWals?t=3904</a>
+
+<p>
+    Теперь в script.js мы создадим целиком приложение
+    <pre>
+        const app = new Application();
+        // выведем его в консоли
+        console.log(app);
+    </pre>
+</p>
+<p>
+    Мы будем вкладывать оппонента и юзера в data-side='player' и data-side="opponent". найдем эти 2 элемента и append добавим в конец player.root и opponent.root
+</p>
+<pre>
+    class Applicaton {
+        player = null;
+        opponent = null;
+
+        constructor() {
+            const player = new BattlefieldView();
+            const oppnent = new BattlefiledView();
+
+            Object.assign(this, {player, opponent});
+
+            document.querySelector('[data-side="player"]').append(player.root);
+            document.querySelector('[data-side="opponent"]').append(opponent.root);
+        }
+    }
+</pre>
+<p>
+    В table мы сгенерируем нужные нам таблицы со всеми маркерами<br/>
+    В dock мы будем вкладывать наши корабли<br/>
+    В polygon мы будем вкладывать наши выстрелы<br/>
+</p>
+<p>
+    Мы и Application написали и экземпляр этого  application создали.
+</p>
+<p>
+    Теперь займемся наполнением таблицы, это стандартный способ обхода матрицы
+    <pre>
+
+        class BattlefieldView {
+            root = null;
+            table = null;
+            dock = null;
+            polygon = null;
+
+            cell = [];
+
+
+            constructor() {
+
+                const root = document.createElement('div');
+                root.classList.add('battlefield');
+
+                const table = document.createElement('table');
+                table.classList.add('battlefield-table');
+
+                const dock = document.createElement('div');
+                dock.classList.add('battlefield-dock');
+
+                const polygon = document.createElement('div');
+                polygon.classList.add('battlefield-polygon');
+
+                Object.assign(this, {root, table, dock, polygon});
+                root.append(table, dock, polygon);
+
+
+                for(let y=0; y<10; y++) {
+                    const row = [];
+                    const tr = document.createElement('tr');
+                    tr.classList.add('battlefield-row');
+                    tr.dataset.y = y;
+
+
+                    for(let x=0; x<10; x++) {
+                            const td = document.createElement('td');
+                            td.classList.add('battlefield-item');
+                            Object.assig(td.dataset, {x, y});
+
+                            tr.append(td);
+                            row.push(td);
+                        }
+                    }
+
+                     table.append(tr);
+                     this.cells.push(row);
+                }
+
+                for(let x=0; x<10; x++) {
+                    const cell = this.cells[0][x];
+                    const marker = document.createElement('div');
+                    marker.classList.add('marker', 'marker-column');
+                    marker.textContent = 'AБВГДЕЖЗИК'
+                    cell.append(marker);
+                }
+
+                for(let y=0; y<10; y++) {
+                    const cell = this.cells[y][0];
+                    const marker = document.createElement('div');
+
+                    marker.classList.add('marker', 'marker-row');
+                    marker.textContent = y + 1   ;
+                }
+
+        }
+    </pre>
+    Это стандартный алгоритм работы с матрицами, это стандартный алгоритм работы с матрицами, это стандартный алгоритм работы с матрицамии.<br/>
+    Создадим так же массив cells, в который мы будем добавлять все строки, для быстрого доступа.<br/>
+    Т.е. мы и на страницу визуально добавили и добавим еще логически в cells;
+</p>
+<p>
+    Т.е. теперь у нас у BattlefieldView есть возможность получить быстрый доступ к любой из ячеек, просто достав координаты x и y
+</p>
+<p>
+    У нас не хватает маркеров, букв и цифр для каждой таблицы, чтобы добавить маркер нам нужно пробежаться по первой строке и первому ряду.
+</p>
+<p>
+    По аналогии поступаем с цифрами слева от клеток, теперь мы продвигаемся по координатам y
+</p>
+<p>
+    <h2>Теперь будем добавлять сцены</h2>
+    У нас есть класса Scene - у каждой сцены должно быть имя и мы должны понимать, какому приложению эта сцена принадлежит, поэтому мы будем передавать
+имя и app
+<pre>
+    class Scene {
+        name = null;
+        app = null;
+
+        constructor(name, app) {
+            Object.assign(this, {name, app});
+        }
+
+        // а так же мы будем инициализировать сцену
+        init() {}
+
+        // мы будем запускать сцену
+        start() {}
+
+
+        // мы будем обновлять сцену
+        update() {}
+
+        // мы будем останавливать сцену
+        stop() {}
+    }
+</pre>
+</p>
+<p>
+    Но здесь мы эти методы определять не будем, а здесь будет только заготовка, теперь в application нам нужно как-то эти сцены добавить, во-первых,
+    у нас будет объект всех сцен
+    <pre>
+        class Application {
+            player = null;
+            opponent = null;f
+
+            scenes = {};
+
+            constructor() {
+                const player = new BattlefieldView();
+                const opponent = new BattlefieldView();
+
+                Object.assign(this, {player, opponent});
+
+                document.querySelector('[data-side="player"]').append(player.root);
+                document.querySelector('[data-side="opponent"]').append(opponent.root);
+            }
+        }
+    </pre>
+</p>
+<p>
+    <pre>
+        const app = new Application({
+            preparation: PreparationSchene,
+        });
+        console.log(app);
+    </pre>
+</p>
+<p>
+    Мы хотим, чтобы в экземпляре объекта у нас существовала сцена с именем preparation. которая является экземпляром класса PreparationScene
+    <br/>
+    Передадим в качестве параметра все сцены и добавим в нашу коллекцию сцен
+</p>
+<pre>
+    class Application {
+        player = null;
+        opponent = null;
+
+        scenes = {};
+
+        constructor(scenes) {
+            const player = new BattlefieldView();
+            const opponent = new BattlefieldView();
+
+            Object.assigne(this, {player, opponent});
+
+
+            document.querySelector('[data-side="player"]').append(player.root);
+            document.querySelector('[data-side="opponent"]').append(opponent.root);
+
+            //    Передадим в качестве параметра все сцены и добавим в нашу коллекцию сцен
+            for( const[sceneName, SceneClass] of Object.entries(scenes) ) {
+                this.scenes[sceneName] = new SceneClass(sceneName, this);
+            }
+            // entries превращаешь объект в формат entries
+        }
+    }
+</pre>
+<p>
+    entries - это преобразование объекта в массив, где каждый параметр объекта это массив, где отдельно ключ и где отдельно значение
+    <pre>
+    {
+        name: 'Алексей',
+        surname: 'ыщьуерштпы'
+    }
+    превращается<br/>
+    [
+        ['name', 'Алексей'],
+        ['surname', 'afasd']
+    ]
+    </pre>
+
+</p>
+<p>
+    Нужно запоминть шаблон работы с объектами
+    <pre>
+        for( const[sceneName, SceneClass] of Object.entries(scenes)) {
+            this.scenes[sceneName] = new SceneClass(sceneName, this);
+        }
+    </pre>
+</p>
+<p>
+    Мы в сцене определили конструктор, теперь нам нужно в Application вызвать инициализацию для всех сцен
+</p>
+<p>
+    Object.values создает нам массив, только со значений этого объекта, это тоже очень удобный инструмент<br/>
+    А чтобы собрать только ключи, то мы можем использовать Object.values
+    <pre>
+        for(const scene of Object.values(this.scenes)) {
+            scene.init();
+        }
+    </pre>
+    обновим страницу и убедимся, что мы ничего не сломали
+</p>
+<p>
+    Теперь давайте в Application определим метод start()
+    Это метод, который позволит нам запускать конкретную сцену, которую мы хотим
+</p>
+<p>
+    Запишем requestAnimationFrame в конце конструктора Application
+    <pre>
+        class Application {
+    player = null;
+    opponent = null;
+    mouse = null;
+
+    scenes = {};
+    activeScene = null;
+
+    constructor(scenes = {}) {
+        const player = new BattlefieldView();
+        const opponent = new BattlefieldView();
+        const mouse = new Mouse(document.body);
+
+        Object.assign(this, {mouse, player, opponent});
+
+        document.querySelector('[data-side="player"]').append(player.root);
+        document.querySelector('[data-side="opponent"]').append(opponent.root);
+
+        for( const[sceneName, SceneClass] of Object.entries(scenes) ) {
+            this.scenes[sceneName] = new SceneClass(sceneName, this);
+        }
+
+        for( const scene of Object.values(this.scenes) ) {
+            //scene.init();
+        }
+
+        requestAnimationFrame(() => {this.tick()});
+    }
+
+    tick() {
+        requestAnimationFrame(() => this.tick());
+        this.mouse.tick();
+    }
+
+    start(sceneName) {
+            // мы тут убеждаемся, что сцены нет
+            if(this.activeScene && this.activeScene.name === sceneName) {
+                return false;
+            }
+
+            // тут убеждаемся, что существует сцена для запуска, т.е. есть имя сцены
+            if(!this.scenes.hasOwnProperty(sceneName)) {
+                return false;
+            }
+
+            // перед тем как запустить другую сцену нам нужно остановить текущую сцену
+            if(this.activeScene) {
+                this.activeScene.stop();
+            }
+
+            // теперь находим сцену, которую хотим запустить
+            const scene = this.scenes[sceneName];
+            scene.start();
+
+            this.activeScene =  scene;
+
+            // возвращаем true потому, что запуск успешно произведен
+            return true;
+
+
+        }
+    }
+    </pre>
+</p>
+<a href="https://youtu.be/os3nhBUWals?t=5739">https://youtu.be/os3nhBUWals?t=5739</a>
+<p>
+    В классе PreparationScene у нас есть методы, которые определены в классе Scene
+    <pre>
+    class PreparationScene extends Scene {
+        // а так же мы будем инициализировать сцену
+        init() {}
+
+        // мы будем запускать сцену
+        start() {}
+
+
+        // мы будем обновлять сцену
+        update() {}
+
+        // мы будем останавливать сцену
+        stop() {}
+    }
+    </pre>
+</p>
+<p>
+    Вызовем в методах console.log('init'); чтобы понять, что метод вызывается.
+</p>
+<a href="https://youtu.be/os3nhBUWals?t=5893">https://youtu.be/os3nhBUWals?t=5893</a>

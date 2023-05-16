@@ -1,0 +1,3 @@
+class ShipView extends Ship {
+
+}
