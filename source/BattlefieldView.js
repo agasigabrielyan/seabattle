@@ -66,4 +66,24 @@ class BattlefieldView extends Battlefield {
 
 
     }
+
+    addShip( ship ) {
+         // мы переопределим это на логическом уровне, поэтому обращаемся к родительскому super
+        if( !super.addShip(ship) ) {
+            return false;
+        }
+
+        this.dock.append( ship.div );
+
+        debugger;
+
+        if(ship.placed) {
+
+        } else {
+            ship.div.style.left = `${ship.startX}px`;
+            ship.div.style.top = `${ship.startY}px`;
+        }
+
+        return true;
+    }
 }

@@ -610,3 +610,236 @@
     Вызовем в методах console.log('init'); чтобы понять, что метод вызывается.
 </p>
 <a href="https://youtu.be/os3nhBUWals?t=5893">https://youtu.be/os3nhBUWals?t=5893</a>
+<p>
+    В классе Application ничего сложного нет, мы хотим, чтобы в нашем приложении были однозначно некоторые элементы: мышка, игрок и его оппонент, банк всех наших
+    сцен, которые мы можем активировать и ссылка на активную в данный момент сцену.<br/>
+    Монтируем наши игровые поля<br/>
+    Регистрируем наши сцены из конструктора в банк<br/>
+    Вызываем у всех сцен init<br/>
+    Регистрируем вызов tick, чтобы этот метод tick вызывался у нас с той же самой частотой, с которой обновляются экраны<br/>
+    Метод start() позволяет нам запустить сцену, предварительно проверив не является ли эта сцена уже активной, есть ли у нас такая сцена<br/>
+
+</p>
+<p>
+    Теперь займемся кораблями, у нас есть PreparationScene - давайте в момент инициализации создадим пулл кораблей и разместим их в dock
+</p>
+<p>
+<pre>
+    class PreparationScene extends Scene {
+    const shipDatas = [
+        {size: 4, direction:'row', startX: 10, startY: 345},
+        {size: 3, direction:'row', startX: 10, startY: 390},
+        {size: 3, direction:'row', startX: 120, startY: 390},
+        {size: 2, direction:'row', startX: 10, startY: 435},
+        {size: 2, direction:'row', startX: 88, startY: 435},
+        {size: 2, direction:'row', startX: 167, startY: 435},
+        {size: 2, direction:'row', startX: 10, startY: 480},
+        {size: 1, direction:'row', startX: 55, startY: 480},
+        {size: 1, direction:'row', startX: 100, startY: 480},
+        {size: 1, direction:'row', startX: 145, startY: 480},
+    ];
+
+    // а так же мы будем инициализировать сцену
+    init() {
+        console.log('PreparationScene init');
+    }
+
+    // мы будем запускать сцену
+    start() {
+        console.log('Preparation scene start');
+    }
+
+
+    // мы будем обновлять сцену
+    update() {
+        console.log('Preparation scene updatится');
+    }
+
+    // мы будем останавливать сцену
+    stop() {}
+}
+</pre>
+Пробежимся по всем кораблям создадим корабли,
+</p>
+<p>
+    Что такое деструктуризация - это когда мы достаем какое то поле класса
+    <pre>
+        const { player } = this.app;
+    </pre>
+    <pre>
+        for( const {size, direction, startX, startY} of shipDatas ) {
+            const ship = new ShipView(size, direction, startX, startY);
+            player.addShip(ship);
+        }
+    </pre>
+</p>
+<p>
+    Наш класс ShipView содержит в себе корабль
+<pre>
+    class ShipView extends Ship {
+    div = null;
+    constructor(size, direction) {
+            super(size, direction);
+
+            const div = document.createElement('div');
+            div.classList.add('ship');
+
+            this.div = div;
+        }
+    }
+</pre>
+</p>
+<p>
+Div кораблей у нас есть теперь мы их должны добавить в наш dock<br/>
+У на в классе Battlefield есть добавление корабля в логическую часть есть, но мы хотели бы, чтобы он попадал так же в визуальную часть.
+<pre>
+    addShip(ship) {
+        if(this.ships.includes(ship)) {
+            return false;
+        }
+
+        this.ships.push(ship);
+        return true;
+    }
+</pre>
+</p>
+<p>
+    Но за визуальную часть отвечает BattlefieldView, следовательно именно он и должен добавлять корабль в dock. Поэтому в BattlefieldView мы и переопределим
+    addShip
+<pre>
+class BattlefieldView extends Battlefield {
+    root = null;
+    table = null;
+    dock = null;
+    polygon = null;
+
+    cells = [];
+
+    constructor() {
+        super();
+        const root = document.createElement('div');
+        root.classList.add('battlefield');
+
+
+        const table = document.createElement('table');
+        table.classList.add('battlefield-table');
+
+        const dock = document.createElement('div');
+        dock.classList.add('dock');
+
+        const polygon = document.createElement('div');
+        polygon.classList.add('polygon');
+
+        Object.assign(this, {root, table, dock, polygon});
+        root.append(table, dock, polygon);
+
+        for(let y=0; y<10; y++) {
+            const row = [];
+            const tr = document.createElement('tr');
+            tr.classList.add('battlefield-row');
+            tr.dataset.y = y;
+
+            for(let x=0; x<10; x++) {
+                const td = document.createElement('td');
+                td.classList.add('battlefield-item');
+                Object.assign(td.dataset, {x, y});
+
+                tr.append(td);
+                row.push(td);
+            }
+
+            table.append(tr);
+            this.cells.push(row);
+        }
+
+
+        for(let x=0; x<10; x++) {
+            const cell = this.cells[0][x];
+            const marker = document.createElement('div');
+
+            marker.classList.add('marker', 'marker-column');
+            marker.textContent = 'АБВГДЕЖЗИК'[x];
+
+            cell.append(marker);
+        }
+
+        for(let y=0; y<10; y++) {
+            const cell = this.cells[y][0];
+            const marker = document.createElement('div');
+
+            marker.classList.add('marker', 'marker-row');
+            marker.textContent = y + 1;
+
+            cell.append(marker);
+        }
+
+
+    }
+
+    addShip( ship ) {
+         // мы переопределим это на логическом уровне, поэтому обращаемся к родительскому super
+        if( !super.addShip(ship) ) {
+            return false;
+        }
+
+        this.dock.append( ship.div );
+        return true;
+    }
+}
+</pre>
+</p>
+<p>
+    Показан очень мощный инструмент объектно-ориентированного программирования, у нас уже есть addShip в родительском классе, он уже там добавляет
+    корабль в список всех кораблей, но у нас кроме логической есть еще и визуальная часть и в BattlefieldView мы просто примешиваем дополнительную
+    логику.
+
+</p>
+<p>
+<pre>
+    if(ship.placed) {
+
+    } else {
+        ship.div.style.left = `${ship.startX}px`;
+        ship.div.style.top = `${ship.startY}px`;
+    }
+</pre>
+</p>
+<p>
+    Теперь определим setDirection в классе ShipView в зависимости от ориентации нам нужно задать разные классы, которые мы определили в стилях.
+<pre>
+    setDirection(newDirection) {
+        if(this.direction === newDirection) {
+            return false;
+        }
+
+
+        this.div.style.remove(`ship-${ship.direction}-${ship.size}`);
+        this.direction = newDirection;
+        this.div.style.add(`ship-${ship.direction}-${ship.size}`);
+
+
+        return true;
+    }
+</pre>
+</p>
+<p>
+    Вернемся к PreparationScene и давайте поработаем с update - вытащим из update player и мышка
+<pre>
+    update() {
+        const {mouse, player} = this.app;
+        // эта конструкция эквивалентна const mouse = this.app.mouse; const player = this.app.player;
+        // чтобы не писать эти 2 строчки - мы пишем одну такую
+
+        if( !this.draggedShip && mouse.left && !mouse.pLeft ) {
+
+        }
+
+    }
+</pre>
+В сцене добавим свойство draggedShip = null; это будет свойство, которое будет ориентироваться на перетаскиваемый корабль.
+Условие обозначает, что если у нас нет перетаскиваемого корабля и мы зажали левую кнопку мыши, а в предыдующей итерации не было зажато это потенциально значит,
+что можно начать перетаскивать корабль.
+<br/>
+Найдем корабль, который находится у нас под мышкой
+</p>
+<a href="https://youtu.be/os3nhBUWals?t=7152">https://youtu.be/os3nhBUWals?t=7152</a>
