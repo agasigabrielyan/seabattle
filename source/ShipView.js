@@ -28,4 +28,8 @@ class ShipView extends Ship {
 
         return true;
     }
+
+    isUnder(point) {
+        return isUnderPoint(point, this.div);
+    }
 }

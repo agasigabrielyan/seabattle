@@ -75,8 +75,6 @@ class BattlefieldView extends Battlefield {
 
         this.dock.append( ship.div );
 
-        debugger;
-
         if(ship.placed) {
 
         } else {
@@ -85,5 +83,9 @@ class BattlefieldView extends Battlefield {
         }
 
         return true;
+    }
+
+    isUnder(point) {
+        return isUnderPoint(point, this.root);
     }
 }

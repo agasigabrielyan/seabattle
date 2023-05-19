@@ -12,6 +12,7 @@ const shipDatas = [
 ];
 
 class PreparationScene extends Scene {
+    draggedShip = null;
     // а так же мы будем инициализировать сцену
     init() {
         const { player } = this.app;
@@ -30,6 +31,33 @@ class PreparationScene extends Scene {
     // мы будем обновлять сцену
     update() {
         const {mouse, player} = this.app;
+
+        debugger;
+
+        // Потенциально хотим начать тянуть корабль
+        if( !this.draggedShip  && mouse.left && !mouse.pLeft) {
+            // надо определить находится ли мышка над одним из кораблей
+            const ship = player.ships.find((ship) => ship.isUnder(mouse));
+            if( ship ) {
+                this.draggedShip = ship;
+            }
+        }
+
+
+        // если у нас прожата левая клавиша и у нас есть перетаскиваемы корабль
+        if(mouse.left && this.draggedShip) {
+            const {left, top} = player.root.getBoundingClientRect();
+
+            this.draggedShip.div.style.left = `${mouse.x}px`;
+            this.draggedShip.div.style.top = `${mouse.y}px`;
+        }
+
+        // если у нас mouse.left не зажата, но все еще есть перетаскиваемый корабль, то это означает, что мы хотим его бросить
+        if( !mouse.left && this.draggedShip ) {
+            this.draggedShip = null;
+        }
+
+
     }
 
     // мы будем останавливать сцену

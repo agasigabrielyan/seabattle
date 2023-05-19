@@ -843,3 +843,33 @@ class BattlefieldView extends Battlefield {
 Найдем корабль, который находится у нас под мышкой
 </p>
 <a href="https://youtu.be/os3nhBUWals?t=7152">https://youtu.be/os3nhBUWals?t=7152</a>
+<p>
+    В additional.js напишем еще одну функцию
+<pre>
+    function isUnderPoint(point, element) {
+        // если точка находится над элементом, то возвращает true в противном случае false
+        // точка у нее должна быть координата x и y с помощью деструктуризации мы их достаем
+        const {x, y} = point;
+        // из элемента нам нужно достать положение этого элемента, любой элемент в js это прямоугольник с шириной и высотой и отступами слева и сверху от левого верхнего угла
+        const rect = element.getBoundingClientRect();
+        // метод getBoundingClientRect возвращает объект - прямоугольник и в нем есть x и y ширина и высота
+        const { left, top, width, height } = element.getBoundingClientRect();
+        // чтобы понять, что точка находится внутри элемента нам нужно убедиться, что координаты точки находятся между точками ширины и высоты элемента.
+        // т.е. point.x должна находится между element.left и (element.left + element.width)
+        // а y должна находится между top и (top + height)
+
+        return left <= x && x <= left + width && top <= y && top + height;
+    }
+</pre>
+Это метод, который принимает точку и элемент и отвечает является ли точка над элементом.
+</p>
+<p>
+    Далее в классе BattlefieldView мы определим метод isUnder(point) - будет возвращать ответ - находится ли точка над нашим игровым полем
+<pre>
+    isUnder(point) {
+        return isUnderPoint(point, this.root);
+    }
+</pre>
+Точно такое же мы определим у ShipView isUnder
+</p>
+<a href="https://youtu.be/os3nhBUWals?t=7814">https://youtu.be/os3nhBUWals?t=7814</a>
